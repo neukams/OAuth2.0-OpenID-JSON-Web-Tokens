@@ -12,7 +12,9 @@ app.enable('trust proxy');
 app.use(bodyParser.json());
 app.use(express.static('./'));
 
-var { expressjwt: jwt, expressjwt } = require("express-jwt");
+//var { expressjwt: jwt, expressjwt } = require("express-jwt");
+
+const route = require('./route_handlers');
 
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
@@ -91,6 +93,7 @@ router.post('/redirect_to_google_oauth', async function(req, res) {
 router.get('/oauth', async function(req, res) {
     console.log('GET /oauth')
     console.log('Received response from Google server');
+    
 
     // if State matches what we generated for the user from GET /redirect_to_google_oauth
     // Google Server responds with the information we requested.
@@ -108,8 +111,7 @@ router.get('/oauth', async function(req, res) {
 
         // TODO HERE: Validate the JWT token (response.data.id_token)
         // If valid, display to user on the HTML response page
-        // If not, ... check requirements.
-        expressjwt
+        // If not, ... check requirements.        
 
         var user_data = await oauth_supp.get_data(response.data);
         console.log('received user data?');
@@ -130,8 +132,8 @@ router.get('/oauth', async function(req, res) {
  * Boat REST API
  ******************************/
 
-router.post('/boats', jwt({secret: "hrmmm", algorithms: ['RS256']}), function(req, res) {
-    
+router.post('/boats', function(req, res) {
+    route.post_boats(req, res);
 });
 
 

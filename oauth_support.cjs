@@ -7,7 +7,7 @@ const headers = {
 }
 
 
-// Exchange the 
+// Get the Public RSA Signature to verify JSON Web Tokens (JWTs)
 async function post_to_google(client_creds, request_code, redirect_uri_location) {
     // POST to google servers
 
