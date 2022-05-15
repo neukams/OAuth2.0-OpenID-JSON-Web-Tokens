@@ -2,10 +2,11 @@
  * This file handles the requests and responses on behalf of server.js, for each route
  */
 
-const jwt = require('jsonwebtoken');
 const axios = require('axios');
-const crypto = require('crypto');
-
+const {OAuth2Client} = require('google-auth-library');
+const client_creds = require('./client_secret_hw7_oauth_openid_connec_params.json');
+const db = require('./db');
+const utils = require('./utils');
 
 /**
  * Returns Google's public RSA key, used to validate JWT Tokens returned from Google's OAuth 2.0 service
@@ -31,6 +32,7 @@ async function get_google_public_rsa_key() {
  * @returns 
  */
 function get_jwt(req) {
+    console.log('get_jwt()');
     return req.headers.authorization.slice(req.headers.authorization.search(' ')+1);
 }
 
@@ -64,7 +66,6 @@ function get_jwt_section(section, jwt) {
     console.log('\nget_jwt_section()');
     console.log('\nsection=' + section);
 
-    section = section.lower()
     if (section === 'header') {
         return jwt.slice(0, jwt.search('.'));
     } else if (section === 'payload') {
@@ -73,7 +74,25 @@ function get_jwt_section(section, jwt) {
         return jwt.slice(indexOfNth(jwt, '.', 2) + 1);
     }
     
-    throw 'error: cannot find section "' + section + '" of JWT';
+    throw 'error: invalid section. must be [header, payload, signature]';
+}
+
+async function validateJWT(token) {
+    console.log('validateJWT()');
+    try {
+        const gauth = new OAuth2Client(client_creds.web.client_id);
+        const ticket = await gauth.verifyIdToken({
+            idToken: token,
+            audience: client_creds.web.client_id
+        });
+        const payload = ticket.getPayload();
+        const userid = payload['sub'];
+        return userid;
+    } catch (err) {
+        console.log('Error occured in validateJWT()');
+        console.log(err);
+    }
+    return '';
 }
 
 /**
@@ -84,39 +103,29 @@ function get_jwt_section(section, jwt) {
  * @param {*} res Response object
  */
 async function post_boats(req, res) {
-    console.log('\nPOST /boats');
     console.log('post_boats()');
 
     var json_web_token = get_jwt(req);
-    
-    // Get public rsa signature from Google (the creator of the JWT)
-    try {
-        var rsa256signature = await get_google_public_rsa_key();
-    } catch (err) {
-        res.status(500).send({'Error': 'GET request failed to Google API for Public RSA Signature retrieval'});
+    var userid = await validateJWT(json_web_token);
+
+    if (userid) {
+        var boat = await db.createBoat({
+            'name': req.body.name,
+            'type': req.body.type,
+            'length': Number(req.body.length),
+            'public': Boolean(req.body.public),
+            'owner': req.body.owner
+        });
+        if (!utils.isEmpty(boat)) {
+            res.status(201).send('Boat created');
+            return;
+        }
+    } else {
+        console.log('invalid JWT. not creating the boat');
+        res.status(401).send({'Error': 'Invalid or missing JWT.'});
         return;
     }
-
-    console.log(rsa256signature);
-    console.log(json_web_token);
-    console.log(get_jwt_section('header', json_web_token));
-
-    var jwt_sig = json_web_token.slice(json_web_token.slice(json_web_token.search('.')).search('.'));
-    console.log('jwt signature:');
-    console.log(jwt_sig);
-
-    // Validate the JWT and retrieve the payload
-    try {
-        var payload = jwt.verify(json_web_token, rsa256signature, {algorithms: ['RS256']});
-    } catch (err) {
-        console.log(err);
-        res.status(401).send({'Error': 'Invalid JSON Web Token'});
-        return;
-    }
-
-    console.log(payload);
-        
-    res.status(201).send({'Success': 'Didnt do anything yet'});
+    res.status(500).send('Internal Error');
 }
 
 module.exports = {

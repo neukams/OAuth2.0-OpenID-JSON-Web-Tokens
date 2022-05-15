@@ -133,6 +133,7 @@ router.get('/oauth', async function(req, res) {
  ******************************/
 
 router.post('/boats', function(req, res) {
+    console.log('\nPOST /boats');
     route.post_boats(req, res);
 });
 

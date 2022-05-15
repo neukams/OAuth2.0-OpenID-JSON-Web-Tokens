@@ -7,7 +7,9 @@ const {Datastore} = require('@google-cloud/datastore');
 const { entity } = require('@google-cloud/datastore/build/src/entity');
 const datastore = new Datastore({projectId:projectId});
 const STATE = 'State';
+const BOAT = 'BOAT';
 const utils = require('./utils');
+
 
 
 /*******************************
@@ -66,6 +68,25 @@ async function getState(state_string) {
 }
 
 /*******************************
+    BOATS
+*******************************/
+
+async function createBoat(boat) {
+    console.log('db.js -> createBoat()');
+    const key = datastore.key(BOAT);
+    try {
+        await datastore.save({"key": key, "data": boat});
+        boat.id = Number(key.id);
+    } catch (err) {
+        utils.logErr(err);
+        return {};
+    }
+    console.log(key);
+    console.log(boat);
+    return boat;
+}
+
+/*******************************
     RESOURCE AGNOSTIC
 *******************************/
 
@@ -94,5 +115,6 @@ async function deleteResource(collection, state_string) {
 module.exports = {
     createState,
     getState,
-    deleteResource
+    deleteResource,
+    createBoat
 }
