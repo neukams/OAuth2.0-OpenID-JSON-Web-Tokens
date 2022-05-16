@@ -56,7 +56,7 @@ const indexOfNth = (string, char, nth, fromIndex = 0) => {
     } else {
       return indexOfNth(string, char, nth - 1, indexChar + 1);
     }
-  }
+}
 
 /**
  * 
@@ -107,6 +107,8 @@ async function post_boats(req, res) {
 
     var json_web_token = get_jwt(req);
     var userid = await validateJWT(json_web_token);
+    console.log('' == true);
+    console.log('' == false);
 
     if (userid) {
         var boat = await db.createBoat({
@@ -114,7 +116,7 @@ async function post_boats(req, res) {
             'type': req.body.type,
             'length': Number(req.body.length),
             'public': Boolean(req.body.public),
-            'owner': req.body.owner
+            'owner': userid
         });
         if (!utils.isEmpty(boat)) {
             res.status(201).send('Boat created');
@@ -128,6 +130,17 @@ async function post_boats(req, res) {
     res.status(500).send('Internal Error');
 }
 
+/**
+ * 
+ * @param {*} id - owner id
+ */
+async function get_public_boats(req, res) {
+    console.log('get_public_boats()');
+    var boats = await db.get_public_boats_by_owner(req.params.owner_id)
+    res.status(200).send(boats);
+}
+
 module.exports = {
-    post_boats
+    post_boats,
+    get_public_boats
 }

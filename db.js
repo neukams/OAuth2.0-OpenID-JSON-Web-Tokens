@@ -22,11 +22,9 @@ function fromDatastore(item) {
     return item;
 }
 
-/*
 function fromDatastoreArr(arr) {
     return arr.map((i) => fromDatastore(i));
 }
-*/
 
 /*******************************
     STATE
@@ -86,6 +84,30 @@ async function createBoat(boat) {
     return boat;
 }
 
+/**
+ * 
+ * @param {*} property DB 'Field' or 'Attribute' to look in
+ * @param {*} operator =, <, >, etc
+ * @param {*} value     value to look for
+ * @returns 
+ */
+async function getBoatByAttribute(property, operator, value) {
+    console.log('getBoatsByAttributes()');
+    const query = datastore.createQuery(BOAT).limit(1);
+    query.filter(property, operator, value);
+    var results = await datastore.runQuery(query);
+    return results[0];
+}
+
+async function get_public_boats_by_owner(owner) {
+    console.log('get_public_boats_by_owner()');
+    const query = datastore.createQuery(BOAT)
+        .filter('public', true)
+        .filter('owner', owner)
+    var results = await query.run();
+    return fromDatastoreArr(results[0]);
+}
+
 /*******************************
     RESOURCE AGNOSTIC
 *******************************/
@@ -116,5 +138,7 @@ module.exports = {
     createState,
     getState,
     deleteResource,
-    createBoat
+    createBoat,
+    getBoatByAttribute,
+    get_public_boats_by_owner
 }

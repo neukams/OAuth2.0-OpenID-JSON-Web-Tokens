@@ -137,6 +137,11 @@ router.post('/boats', function(req, res) {
     route.post_boats(req, res);
 });
 
+router.get('/owners/:owner_id/boats', function(req, res) {
+    console.log('GET /owners/:owner_id/boats');
+    route.get_public_boats(req, res);
+});
+
 
 app.use(router);
 
