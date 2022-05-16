@@ -28,7 +28,7 @@ const client_id = 'client_id=' + client_creds.web.client_id;
 
 var redirect_uri_location;
 if (!process.env.LOCAL_SPENCER) {
-    redirect_uri_location = client_creds.web.redirect_uris[0];
+    redirect_uri_location = client_creds.web.redirect_uris[1];
 } else  {
     redirect_uri_location = process.env.LOCAL_SPENCER;
 }
