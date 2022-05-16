@@ -132,15 +132,25 @@ router.get('/oauth', async function(req, res) {
  * Boat REST API
  ******************************/
 
-router.post('/boats', function(req, res) {
+router.post('/boats', async function(req, res) {
     console.log('\nPOST /boats');
     route.post_boats(req, res);
 });
 
-router.get('/owners/:owner_id/boats', function(req, res) {
+router.get('/owners/:owner_id/boats', async function(req, res) {
     console.log('GET /owners/:owner_id/boats');
     route.get_public_boats(req, res);
 });
+
+router.get('/boats', async function(req, res) {
+    console.log('GET /boats');
+    route.get_boats(req, res);
+});
+
+router.delete('/boats/:boat_id', async function(req, res) {
+    console.log('DELETE /boats/:boat_id');
+    route.delete_boat(req, res);
+})
 
 
 app.use(router);

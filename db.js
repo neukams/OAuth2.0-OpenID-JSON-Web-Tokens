@@ -91,14 +91,15 @@ async function createBoat(boat) {
  * @param {*} value     value to look for
  * @returns 
  */
-async function getBoatByAttribute(property, operator, value) {
-    console.log('getBoatsByAttributes()');
-    const query = datastore.createQuery(BOAT).limit(1);
+async function getBoatsByAttribute(property, operator, value) {
+    console.log('getBoatsByAttribute()');
+    const query = datastore.createQuery(BOAT)
     query.filter(property, operator, value);
     var results = await datastore.runQuery(query);
-    return results[0];
+    return fromDatastoreArr(results[0]);
 }
 
+// Get public boats owned by param owner
 async function get_public_boats_by_owner(owner) {
     console.log('get_public_boats_by_owner()');
     const query = datastore.createQuery(BOAT)
@@ -108,12 +109,45 @@ async function get_public_boats_by_owner(owner) {
     return fromDatastoreArr(results[0]);
 }
 
+// get boat by id
+async function getBoat(id) {
+    console.log('getBoat()');
+    var boat;
+    const key = datastore.key([BOAT, Number(id)]);
+    const query = datastore.createQuery(BOAT);
+    query.filter('__key__', key);
+    boat = await datastore.runQuery(query);
+    boat = boat[0];
+
+    if (utils.isEmpty(boat)) {
+        return {};
+    }
+    
+    return fromDatastore(boat[0]);
+}
+
+async function deleteBoat(id) {
+    console.log('deleteBoat()');    
+    const key = datastore.key([BOAT, Number(id)]);
+    const transaction = datastore.transaction();
+
+    try {
+        await transaction.run();
+        await transaction.delete(key);
+        await transaction.commit();
+    } catch (err) {
+        utils.logErr(err);
+        return false;
+    }
+    return true;
+}
+
 /*******************************
     RESOURCE AGNOSTIC
 *******************************/
 
 async function deleteResource(collection, state_string) {
-    console.log('deleteResource(collection, resource)');
+    console.log('deleteResource()');
     console.log('collection=' + collection);
     console.log('state_string=' + state_string);
 
@@ -133,12 +167,13 @@ async function deleteResource(collection, state_string) {
     return true;
 }
 
-
 module.exports = {
     createState,
     getState,
     deleteResource,
     createBoat,
-    getBoatByAttribute,
-    get_public_boats_by_owner
+    getBoatsByAttribute,
+    get_public_boats_by_owner,
+    getBoat,
+    deleteBoat
 }

@@ -33,6 +33,16 @@ async function get_google_public_rsa_key() {
  */
 function get_jwt(req) {
     console.log('get_jwt()');
+
+    try {
+        if (req.headers.authorization.length <= String('Bearer ').length) {
+            console.log('no jwt found in auth req header');
+            return '';
+        }
+    } catch {
+        return '';
+    }
+
     return req.headers.authorization.slice(req.headers.authorization.search(' ')+1);
 }
 
@@ -105,10 +115,11 @@ async function validateJWT(token) {
 async function post_boats(req, res) {
     console.log('post_boats()');
 
-    var json_web_token = get_jwt(req);
+    var json_web_token = await get_jwt(req);
     var userid = await validateJWT(json_web_token);
     console.log('' == true);
     console.log('' == false);
+    console.log('userid = ' + userid);
 
     if (userid) {
         var boat = await db.createBoat({
@@ -119,7 +130,7 @@ async function post_boats(req, res) {
             'owner': userid
         });
         if (!utils.isEmpty(boat)) {
-            res.status(201).send('Boat created');
+            res.status(201).send(boat);
             return;
         }
     } else {
@@ -140,7 +151,76 @@ async function get_public_boats(req, res) {
     res.status(200).send(boats);
 }
 
+/**
+ * 
+ * Returns all boats for ...
+ *  - If the JWT in the Authorization header is valid, returns all boats for that user
+ *  - If the JWT in the Authorization header is invalid/not provided, all public boats are returned
+ * 
+ * @param {*} req  Request object
+ * @param {*} res  Response object
+ */
+async function get_boats(req, res) {
+    var boats = [];
+    var jwt = get_jwt(req);
+    var owner = await validateJWT(jwt);
+
+    // get boats for owner
+    if (owner) {
+        boats = await db.getBoatsByAttribute('owner', '=', owner);
+    // get all public boats
+    } else {
+        boats = await db.getBoatsByAttribute('public', '=', true);
+    }
+
+    res.status(200).send(boats);
+}
+
+async function delete_boat(req, res) {
+    console.log('delete_boat()');
+
+    var jwt = await get_jwt(req);
+    var owner_id = await validateJWT(jwt);
+
+    // JWT is valid
+    if (owner_id) {
+        var boat = await db.getBoat(req.params.boat_id);
+        console.log('retrieved boat:');
+        console.log(boat);
+
+        // boat found
+        if (!utils.isEmpty(boat)) {
+            console.log('boat owner = ' + boat.owner);
+            console.log('owner_id = ' + owner_id);
+
+            // boat owned by owner, delete it
+            if (boat.owner == owner_id) {
+                console.log('boat deleted? ' + await db.deleteBoat(boat.id));
+                res.status(204).send();
+                return;
+
+            // boat owned by someone else
+            } else {
+                res.status(403).send();
+                return;
+            }
+
+        // boat not found
+        } else {
+            res.status(403).send();
+            return;
+        }
+
+    // missing or invalid JWT
+    } else {
+        res.status(401).send();
+        return;
+    }
+}
+
 module.exports = {
     post_boats,
-    get_public_boats
+    get_public_boats,
+    get_boats,
+    delete_boat
 }
